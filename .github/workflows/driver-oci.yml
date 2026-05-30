@@ -1,0 +1,123 @@
+name: weft-driver-vz → OCI
+
+# Builds the Apple-VZ driver plugin (cgo: Virtualization.framework + AppKit) on
+# a macOS runner and publishes it as a multi-arch OCI image to GHCR. This is
+# the cgo carrier — weft itself stays pure-Go and pulls this at runtime
+# (driverplugins: local-first, else OCI).
+#
+# Same packaging convention as weft-driver-qemu (index → per-(os,arch) image →
+# config{os,architecture} + layer[0] = the executable). macOS only: arm64
+# (Apple silicon) is the primary target; Intel arm is built on macos-13.
+#
+# CODE SIGNING: the binary needs the com.apple.security.virtualization
+# entitlement to actually create VMs. Wire signing once a Developer ID +
+# provisioning secrets exist (commented step below); unsigned builds still
+# serve + answer HostInfo, which is enough for handshake smokes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "OCI tag (default: v<short-sha>)"
+        required: false
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  BINARY: weft-driver-vz
+  BINARY_MEDIATYPE: application/vnd.openweft.driver.binary
+  ARTIFACT_TYPE: application/vnd.openweft.weft-driver
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14   # Apple silicon
+            goarch: arm64
+          - runner: macos-13   # Intel
+            goarch: amd64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build the Apple-VZ plugin (cgo)
+        run: |
+          set -euo pipefail
+          out="stage/darwin-${{ matrix.goarch }}/${BINARY}"
+          mkdir -p "$(dirname "$out")"
+          CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.goarch }} \
+            go build -trimpath -o "$out" ./cmd/${BINARY}
+
+      # - name: Codesign with the virtualization entitlement
+      #   run: |
+      #     codesign --force --options runtime \
+      #       --entitlements .github/vz.entitlements \
+      #       --sign "$DEVELOPER_ID" "stage/darwin-${{ matrix.goarch }}/${BINARY}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY }}-darwin-${{ matrix.goarch }}
+          path: stage/darwin-${{ matrix.goarch }}/${{ env.BINARY }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dl
+
+      - name: Stage downloaded binaries
+        run: |
+          set -euo pipefail
+          mkdir -p stage
+          # download-artifact lays out dl/<artifact-name>/<binary>.
+          for a in dl/*/; do
+            name="$(basename "$a")"                 # weft-driver-vz-darwin-arm64
+            platform="${name#${BINARY}-}"           # darwin-arm64
+            mkdir -p "stage/${platform}"
+            cp "${a}${BINARY}" "stage/${platform}/${BINARY}"
+            chmod +x "stage/${platform}/${BINARY}"
+          done
+          ls -lhR stage
+
+      - name: Install ORAS
+        uses: oras-project/setup-oras@v1
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | oras login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push per-arch images + assemble the multi-arch index
+        run: |
+          set -euo pipefail
+          repo="ghcr.io/${{ github.repository_owner }}/${BINARY}"
+          tag="${{ inputs.tag }}"; [ -n "$tag" ] || tag="v${GITHUB_SHA::12}"
+
+          children=""
+          for d in stage/*/; do
+            platform="$(basename "$d")"            # darwin-arm64
+            os="${platform%-*}"; arch="${platform#*-}"
+            printf '{"architecture":"%s","os":"%s"}' "$arch" "$os" > "$d/config.json"
+            child="${repo}:${tag}-${platform}"
+            ( cd "$d" && oras push "$child" \
+                --artifact-type "${ARTIFACT_TYPE}" \
+                --config config.json:application/vnd.oci.image.config.v1+json \
+                --annotation "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+                --annotation "org.opencontainers.image.revision=${GITHUB_SHA}" \
+                "${BINARY}:${BINARY_MEDIATYPE}" )
+            children="$children $child"
+          done
+
+          oras manifest index create "${repo}:${tag}" $children
+          oras tag "${repo}:${tag}" latest
+          echo "Published ${repo}:${tag} (+ :latest) for: $children"
