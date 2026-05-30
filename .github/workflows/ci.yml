@@ -1,0 +1,53 @@
+name: CI
+
+# weft-driver-vz is the Apple-VZ driver — cgo against Virtualization.framework
+# and AppKit, darwin-only. CI verifies it builds on macOS arm64 (Apple silicon,
+# primary target) and amd64 (intel, secondary). Tests run on arm64 since the
+# macos-14 runner is the default. No OCI publish here — that lives in
+# driver-oci.yml which is workflow_dispatch + tag-only.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14   # Apple silicon
+            goarch: arm64
+          - runner: macos-13   # Intel
+            goarch: amd64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: vet
+        # cgo flags need to be present for vet to compile the cgo bits.
+        env:
+          CGO_ENABLED: "1"
+        run: go vet ./...
+
+      - name: build (darwin/${{ matrix.goarch }}, cgo)
+        env:
+          CGO_ENABLED: "1"
+          GOOS: darwin
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -trimpath ./...
+
+      - name: test
+        # Tests run only on the native arch since cross-arch cgo tests need
+        # a darwin runner of that arch + can't load the framework libs.
+        if: matrix.goarch == 'arm64'
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race -count=1 ./...
