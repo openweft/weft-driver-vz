@@ -329,6 +329,22 @@ func (h *Hypervisor) DetachNIC(ctx context.Context, vmUUID, nicDevice string) er
 	return drivers.ErrUnsupported
 }
 
+// ValidatePCIPassthrough rejects every non-empty PCI passthrough
+// request : Apple Virtualization framework has no host-PCI
+// passthrough surface (VZ exposes virtio-net / virtio-blk / virtio-fs
+// only — no VFIO, no IOMMU). Operators wanting passthrough must use
+// QEMU on Linux instead (see docs/operations/pci-passthrough.md).
+//
+// Returns InvalidArgument-style error keyed off the first BDF so
+// dispatch can surface "this host can't passthrough" distinct from
+// the generic ErrUnsupported.
+func (h *Hypervisor) ValidatePCIPassthrough(bdfs []string) error {
+	if len(bdfs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("vz: PCI passthrough not supported by Apple Virtualization framework (requested %d device(s), first=%q)", len(bdfs), bdfs[0])
+}
+
 // Compile-time guarantee that we satisfy the interface. Any
 // future drift between the API module and this impl is caught at
 // build time.
