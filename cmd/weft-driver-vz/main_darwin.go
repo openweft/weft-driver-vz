@@ -15,6 +15,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 
 	weftplugin "github.com/openweft/weft-driver-plugin"
 	builtin "github.com/openweft/weft-driver-vz/builtin"
+	weftslognats "github.com/openweft/weft-slognats"
 )
 
 func main() {
@@ -35,13 +37,18 @@ func main() {
 		runtime.LockOSThread()
 	}
 
+	hostUUID := os.Getenv(weftplugin.EnvHostUUID)
+	log, logCloser := weftslognats.SetupFromEnv("weft.driver.vz." + hostUUID + ".log")
+	defer logCloser.Close()
+	slog.SetDefault(log)
+
 	root := &cobra.Command{
 		Use:           "weft-driver-vz",
 		Short:         "weft Apple-VZ driver plugin (cgo). Run with no arguments to serve over go-plugin.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(*cobra.Command, []string) error {
-			serve() // blocks until the host disconnects
+			serve(hostUUID) // blocks until the host disconnects
 			return nil
 		},
 	}
@@ -56,9 +63,9 @@ func main() {
 
 // serve builds the Apple-VZ driver bundle for this host (config from env, set
 // by the launching weft process) and serves all four driver services.
-func serve() {
+func serve(hostUUID string) {
 	opts := builtin.Options{
-		HostUUID: os.Getenv(weftplugin.EnvHostUUID),
+		HostUUID: hostUUID,
 		Hostname: os.Getenv(weftplugin.EnvHostname),
 		AZ:       os.Getenv(weftplugin.EnvAZ),
 		// Fork this same binary as `vz-vm-run` for each VM — the window and
