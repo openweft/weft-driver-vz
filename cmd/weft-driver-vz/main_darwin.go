@@ -41,6 +41,7 @@ func main() {
 	log, logCloser := weftslognats.SetupFromEnv("weft.driver.vz." + hostUUID + ".log")
 	defer logCloser.Close()
 	slog.SetDefault(log)
+	defer weftslognats.PanicReporter("weft-driver-vz")
 
 	root := &cobra.Command{
 		Use:           "weft-driver-vz",
