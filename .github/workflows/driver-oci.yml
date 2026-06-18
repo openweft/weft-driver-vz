@@ -43,8 +43,8 @@ jobs:
             goarch: amd64
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
 
@@ -62,7 +62,7 @@ jobs:
       #       --entitlements .github/vz.entitlements \
       #       --sign "$DEVELOPER_ID" "stage/darwin-${{ matrix.goarch }}/${BINARY}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.BINARY }}-darwin-${{ matrix.goarch }}
           path: stage/darwin-${{ matrix.goarch }}/${{ env.BINARY }}
@@ -71,7 +71,7 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dl
 
