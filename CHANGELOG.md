@@ -7,6 +7,27 @@ and this project aims to adhere to [Semantic Versioning](https://semver.org/spec
 
 ## [Unreleased]
 
+### Documented
+
+- **AF_VSOCK CID readback is not implementable on this backend.**
+  Apple's `Virtualization.framework` does not expose the guest CID
+  the framework assigns at boot. `VZVirtioSocketDevice` exposes
+  only `setSocketListener:forPort:`, `removeSocketListenerForPort:`
+  and `connectToPort:completionHandler:` ; `VZVirtioSocketConnection`
+  exposes only `sourcePort`, `destinationPort`, `fileDescriptor`.
+  There is no `contextID`/`guestCID` property anywhere on the public
+  surface (verified against the current macOS SDK headers, copyright
+  through 2025, and against `github.com/Code-Hex/vz/v3@v3.7.1` which
+  faithfully mirrors that surface). Consequence : `weft`'s
+  `GuestPodPlane.Attach` strict-when-known peer check stays in its
+  permissive-fallback mode for VZ-backed microVMs ; QEMU-backed
+  microVMs remain fully protected because their CID is host-allocated
+  (`weft-driver-qemu` v0.5.0+ binds `-device vhost-vsock-pci,guest-cid=N`).
+  If a future macOS release adds a CID accessor, revisit this :
+  read it post-`Start()`, persist to `<vmDir>/vsock_actual_cid`, and
+  have the agent call `Adapter.RegisterPodCID` from the StartVM
+  dispatch site.
+
 ### Fixed
 
 - **`builtin.Volume` satisfies the grown `drivers.VolumeDriver`

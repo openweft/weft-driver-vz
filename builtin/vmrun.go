@@ -606,12 +606,19 @@ func buildVZConfigFromDir(dir, consolePath string, withGraphics bool) (*vz.Virtu
 	// VirtioSocketDeviceConfiguration : the AF_VSOCK transport every
 	// microVM uses to reach the host's GuestPodPlane. Apple VZ does
 	// NOT let userland pick the guest CID — the framework picks one
-	// at boot and exposes it later via the VZVirtioSocketDevice's
-	// listenerForPort / connectToPort APIs. So weft's allocator-derived
-	// VsockCID is advisory on this backend : strict-when-known will
-	// fall through to the permissive guard for VZ-backed VMs until
-	// the agent reads the runtime CID back and updates the registry.
-	// The device must still be attached or the guest can't dial at all.
+	// at boot and, per the current macOS SDK headers (Virtualization
+	// .framework, copyright through 2025), does NOT expose it back
+	// to the host either : VZVirtioSocketDevice has only
+	// setSocketListener:forPort: / removeSocketListenerForPort: /
+	// connectToPort:completionHandler:, and VZVirtioSocketConnection
+	// has only sourcePort/destinationPort/fileDescriptor. So weft's
+	// allocator-derived VsockCID is permanently advisory on this
+	// backend : strict-when-known falls through to the permissive
+	// guard for VZ-backed VMs (vs full protection on QEMU, whose
+	// CID is host-allocated and bound via -device vhost-vsock-pci,
+	// guest-cid=N). See CHANGELOG entry "AF_VSOCK CID readback is
+	// not implementable on this backend" for the audit. The device
+	// must still be attached or the guest can't dial at all.
 	if vsockDev, vsockErr := vz.NewVirtioSocketDeviceConfiguration(); vsockErr == nil {
 		cfg.SetSocketDevicesVirtualMachineConfiguration([]vz.SocketDeviceConfiguration{vsockDev})
 		fmt.Fprintf(os.Stderr, "vz: attached virtio-vsock device (CID picked by VZ at boot)\n")
