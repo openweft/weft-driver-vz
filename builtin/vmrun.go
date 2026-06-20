@@ -603,6 +603,25 @@ func buildVZConfigFromDir(dir, consolePath string, withGraphics bool) (*vz.Virtu
 		cfg.SetEntropyDevicesVirtualMachineConfiguration([]*vz.VirtioEntropyDeviceConfiguration{entropyDev})
 	}
 
+	// VirtioSocketDeviceConfiguration : the AF_VSOCK transport every
+	// microVM uses to reach the host's GuestPodPlane. Apple VZ does
+	// NOT let userland pick the guest CID — the framework picks one
+	// at boot and exposes it later via the VZVirtioSocketDevice's
+	// listenerForPort / connectToPort APIs. So weft's allocator-derived
+	// VsockCID is advisory on this backend : strict-when-known will
+	// fall through to the permissive guard for VZ-backed VMs until
+	// the agent reads the runtime CID back and updates the registry.
+	// The device must still be attached or the guest can't dial at all.
+	if vsockDev, vsockErr := vz.NewVirtioSocketDeviceConfiguration(); vsockErr == nil {
+		cfg.SetSocketDevicesVirtualMachineConfiguration([]vz.SocketDeviceConfiguration{vsockDev})
+		fmt.Fprintf(os.Stderr, "vz: attached virtio-vsock device (CID picked by VZ at boot)\n")
+	} else {
+		// A missing vsock device blocks the guest GuestPodPlane
+		// client from working, but doesn't break legacy VM boots ;
+		// log and continue rather than failing the whole VM start.
+		fmt.Fprintf(os.Stderr, "vz: warn: VirtioSocketDevice unavailable : %v\n", vsockErr)
+	}
+
 	// virtio-fs directory shares — populated by weft-microvm (and any future
 	// microVM-style consumer) via config.json's `shares` field. The
 	// guest mounts each share by tag (e.g. `mount -t virtiofs rootfs0
