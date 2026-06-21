@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/Code-Hex/vz/v3 v3.7.1
-	github.com/openweft/weft-driver-plugin v0.0.0
+	github.com/openweft/weft-driver-plugin v0.4.0
 	github.com/openweft/weft-drivers v0.3.0
 	github.com/openweft/weft-slognats v0.3.0
 	github.com/spf13/cobra v1.10.2
@@ -34,9 +34,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
 	google.golang.org/grpc v1.81.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-)
-
-replace (
-	github.com/openweft/weft-driver-plugin => ../weft-driver-plugin
-	github.com/openweft/weft-drivers => ../weft-drivers
 )
