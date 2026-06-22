@@ -64,6 +64,12 @@ type Options struct {
 	OnEvent func(vmDir, kind string, meta map[string]string)
 }
 
+// Version is the compile-time build version of weft-driver-vz.
+// Set via -ldflags "-X github.com/openweft/weft-driver-vz/builtin.Version=vX.Y.Z"
+// at link time ; "dev" for un-stamped builds. Reported in HostInfo
+// so weft can surface it in the TUI / webui chrome.
+var Version = "dev"
+
 // hostInfoFor returns the HostInfo every driver in this bundle
 // surfaces. Architecture comes from runtime.GOARCH ("arm64" on
 // Apple silicon, "amd64" on Intel Macs).
@@ -74,5 +80,6 @@ func hostInfoFor(o Options) drivers.HostInfo {
 		AZ:           o.AZ,
 		Hypervisor:   "apple-vz",
 		Architecture: runtime.GOARCH,
+		Version:      Version,
 	}
 }
