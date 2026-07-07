@@ -35,6 +35,7 @@ func TestNewBundle_ReturnsFourDrivers(t *testing.T) {
 		AZ:           "us-east-1a",
 		Hypervisor:   "apple-vz",
 		Architecture: runtime.GOARCH,
+		Version:      Version,
 	}
 
 	for name, d := range map[string]interface{ HostInfo(context.Context) (drivers.HostInfo, error) }{
