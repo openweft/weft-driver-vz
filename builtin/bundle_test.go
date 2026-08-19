@@ -35,9 +35,19 @@ func TestNewBundle_ReturnsFourDrivers(t *testing.T) {
 		AZ:           "us-east-1a",
 		Hypervisor:   "apple-vz",
 		Architecture: runtime.GOARCH,
+		// Version is a build-time -ldflags override that defaults to "dev".
+		// Asserting the package variable keeps this correct under a plain
+		// `go test` and under a release build alike; hardcoding "" made every
+		// macOS lane red the moment HostInfo.Version started being populated.
+		Version: Version,
+	}
+	if wantInfo.Version == "" {
+		t.Fatal("HostInfo.Version is empty: the field is no longer being populated")
 	}
 
-	for name, d := range map[string]interface{ HostInfo(context.Context) (drivers.HostInfo, error) }{
+	for name, d := range map[string]interface {
+		HostInfo(context.Context) (drivers.HostInfo, error)
+	}{
 		"hypervisor": b.Hypervisor,
 		"network":    b.Network,
 		"volume":     b.Volume,
