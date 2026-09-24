@@ -20,7 +20,7 @@ Build-tagged `darwin` only — Apple VZ doesn't exist on Linux.
 **Scaffold phase.** Today this module just declares the four
 driver interfaces and a shared `HostInfo` helper. Action methods
 return `drivers.ErrUnsupported` — the actual implementation lives
-in [`../weft`](../weft) (runvm.go, adapter.go's
+in [`../weft`](https://github.com/openweft/weft) (runvm.go, adapter.go's
 provisionVMDir/CloneVM/StartVM/StopVM/DeleteVM, etc.).
 
 Subsequent commits port one method at a time from `weft` into
