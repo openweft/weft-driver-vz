@@ -57,9 +57,9 @@ func (h *Hypervisor) HostInfo(ctx context.Context) (drivers.HostInfo, error) {
 
 // CreateVM provisions the host-side Apple VZ state for one VM:
 //
-//   * `<vmDir>/nvram.bin` — EFI variable store
-//   * `<vmDir>/machine-id.bin` — Apple VZ machine identifier
-//   * `<vmDir>/mac.txt` — locally administered MAC for the
+//   - `<vmDir>/nvram.bin` — EFI variable store
+//   - `<vmDir>/machine-id.bin` — Apple VZ machine identifier
+//   - `<vmDir>/mac.txt` — locally administered MAC for the
 //     guest NIC
 //
 // These three files together encode the VM's persistent host
@@ -139,9 +139,9 @@ func (h *Hypervisor) CreateVM(ctx context.Context, spec drivers.VMSpec) error {
 //
 // Lifecycle bookkeeping:
 //
-//   * vm.pid is written under the vmDir before this method
+//   - vm.pid is written under the vmDir before this method
 //     returns, so StopVM works immediately.
-//   * A goroutine cmd.Wait()'s the subprocess, removes vm.pid on
+//   - A goroutine cmd.Wait()'s the subprocess, removes vm.pid on
 //     exit, then invokes Options.OnVMExit (if set). This is how
 //     the Adapter learns about crashes / graceful exits.
 //
@@ -190,11 +190,11 @@ func (h *Hypervisor) StartVM(ctx context.Context, vmUUID string) error {
 // subprocess by reading its persisted PID file and sending
 // SIGTERM. Idempotent per the interface contract:
 //
-//   * No vm.pid file → already stopped / never started → nil.
-//   * PID points to a dead / unknown process → nil (not an
+//   - No vm.pid file → already stopped / never started → nil.
+//   - PID points to a dead / unknown process → nil (not an
 //     error). The reconciler treats "stop requested, no process
 //     to signal" as the desired terminal state.
-//   * Malformed PID content → error (operator-visible bug, not
+//   - Malformed PID content → error (operator-visible bug, not
 //     a transient condition).
 //
 // Transitional convention: `vmUUID` is the absolute path to the
@@ -257,9 +257,9 @@ func (h *Hypervisor) DeleteVM(ctx context.Context, vmUUID string) error {
 // responsible for creating the backing file when it doesn't
 // already exist + the spec carries a positive SizeGiB:
 //
-//   * BackingPath exists                       → idempotent no-op
-//   * BackingPath missing, SizeGiB > 0         → vz.CreateDiskImage
-//   * BackingPath missing, SizeGiB == 0        → error
+//   - BackingPath exists                       → idempotent no-op
+//   - BackingPath missing, SizeGiB > 0         → vz.CreateDiskImage
+//   - BackingPath missing, SizeGiB == 0        → error
 //
 // The actual "tell the VM to open this file" step lives in the
 // runvm.go subprocess that reads config.json; AttachDisk only
