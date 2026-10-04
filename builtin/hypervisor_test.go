@@ -171,10 +171,10 @@ func TestHypervisor_StartVM_UnsupportedWithoutSpawn(t *testing.T) {
 // TestHypervisor_StartVM_ForksWritesPIDAndOnExit covers the
 // full happy path:
 //
-//   * the SpawnVMCommand closure is invoked with the vmDir
-//   * the subprocess is forked
-//   * vm.pid is written with the subprocess's PID
-//   * OnVMExit fires when the subprocess exits + vm.pid is
+//   - the SpawnVMCommand closure is invoked with the vmDir
+//   - the subprocess is forked
+//   - vm.pid is written with the subprocess's PID
+//   - OnVMExit fires when the subprocess exits + vm.pid is
 //     removed before it does
 //
 // Uses `sleep 30` as a stand-in for vz-vm-run so the test stays
