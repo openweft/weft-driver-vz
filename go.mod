@@ -1,6 +1,6 @@
 module github.com/openweft/weft-driver-vz
 
-go 1.27.1
+go 1.27.2
 
 require (
 	github.com/Code-Hex/vz/v3 v3.7.1
@@ -8,7 +8,7 @@ require (
 	github.com/openweft/weft-drivers v0.4.0
 	github.com/openweft/weft-slognats v0.3.0
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/sys v0.42.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
@@ -27,11 +27,11 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
-	google.golang.org/grpc v1.81.1 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800 // indirect
+	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
